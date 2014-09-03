@@ -19,24 +19,23 @@
 
 package org.apache.cxf.jaxrs.ext.search;
 
+import com.sun.jersey.api.core.HttpContext;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import javax.ws.rs.core.MultivaluedMap;
 
-import org.apache.cxf.common.logging.LogUtils;
-import org.apache.cxf.common.util.PropertyUtils;
-import org.apache.cxf.helpers.CastUtils;
 import org.apache.cxf.jaxrs.ext.search.client.CompleteCondition;
 import org.apache.cxf.jaxrs.ext.search.client.SearchConditionBuilder;
 import org.apache.cxf.jaxrs.ext.search.fiql.FiqlParser;
-import org.apache.cxf.jaxrs.utils.InjectionUtils;
-import org.apache.cxf.jaxrs.utils.JAXRSUtils;
-import org.apache.cxf.message.Message;
-import org.apache.cxf.message.MessageUtils;
+import org.apache.cxf.jaxrs.ext.search.utils.CastUtils;
+import org.apache.cxf.jaxrs.ext.search.utils.InjectionUtils;
+import org.apache.cxf.jaxrs.ext.search.utils.JAXRSUtils;
+import org.apache.cxf.jaxrs.ext.search.utils.PropertyUtils;
+import org.apache.log4j.Logger;
 
 public class SearchContextImpl implements SearchContext {
 
@@ -47,11 +46,11 @@ public class SearchContextImpl implements SearchContext {
     private static final String USE_PLAIN_QUERY_PARAMETERS = "search.use.plain.queries";
     private static final String USE_ALL_QUERY_COMPONENT = "search.use.all.query.component";
     private static final String BLOCK_SEARCH_EXCEPTION = "search.block.search.exception";
-    private static final Logger LOG = LogUtils.getL7dLogger(SearchContextImpl.class);
-    private Message message;
+    private static final Logger LOG = Logger.getLogger(SearchContextImpl.class);
+    private HttpContext context;
     
-    public SearchContextImpl(Message message) {
-        this.message = message;
+    public SearchContextImpl(HttpContext context) {
+        this.context = context;
     }
     
     public <T> SearchCondition<T> getCondition(Class<T> cls) {
@@ -84,7 +83,7 @@ public class SearchContextImpl implements SearchContext {
                                                Map<String, String> parserProperties) {    
         if (InjectionUtils.isPrimitive(cls)) {
             String errorMessage = "Primitive condition types are not supported"; 
-            LOG.warning(errorMessage);
+            LOG.warn(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
         
@@ -96,7 +95,7 @@ public class SearchContextImpl implements SearchContext {
             try {
                 return parser.parse(theExpression);
             } catch (SearchParseException ex) {
-                if (PropertyUtils.isTrue(message.getContextualProperty(BLOCK_SEARCH_EXCEPTION))) {
+                if (PropertyUtils.isTrue(context.getProperties().get(BLOCK_SEARCH_EXCEPTION))) {
                     return null;
                 } else {
                     throw ex;
@@ -110,14 +109,14 @@ public class SearchContextImpl implements SearchContext {
 
     public String getSearchExpression() {
         
-        String queryStr = (String)message.get(Message.QUERY_STRING);
+        String queryStr = context.getUriInfo().getRequestUri().getQuery();
         if (queryStr != null) { 
-            if (MessageUtils.isTrue(message.getContextualProperty(USE_ALL_QUERY_COMPONENT))) {
+            if (PropertyUtils.isTrue(context.getProperties().get(USE_ALL_QUERY_COMPONENT))) {
                 return queryStr;
             }
-            MultivaluedMap<String, String> params = 
-                JAXRSUtils.getStructuredParams(queryStr, "&", true, false);
-            String customQueryParamName = (String)message.getContextualProperty(CUSTOM_SEARCH_QUERY_PARAM_NAME);
+            MultivaluedMap<String, String> params =
+                    JAXRSUtils.getStructuredParams(queryStr, "&", true, false);
+            String customQueryParamName = (String)context.getProperties().get(CUSTOM_SEARCH_QUERY_PARAM_NAME);
             if (customQueryParamName != null) {
                 return params.getFirst(customQueryParamName);
             }
@@ -127,7 +126,7 @@ public class SearchContextImpl implements SearchContext {
                 } else {
                     return params.getFirst(SEARCH_QUERY);
                 }
-            } else if (MessageUtils.isTrue(message.getContextualProperty(USE_PLAIN_QUERY_PARAMETERS))) {
+            } else if (PropertyUtils.isTrue(context.getProperties().get(USE_PLAIN_QUERY_PARAMETERS))) {
                 return convertPlainQueriesToFiqlExp(params);     
             }
         }
@@ -172,7 +171,7 @@ public class SearchContextImpl implements SearchContext {
                                                    Map<String, String> beanProperties,
                                                    Map<String, String> parserProperties) {
         
-        Object parserProp = message.getContextualProperty(CUSTOM_SEARCH_PARSER_PROPERTY);
+        Object parserProp = context.getProperties().get(CUSTOM_SEARCH_PARSER_PROPERTY);
         if (parserProp != null) {
             return getCustomParser(parserProp);
         }
@@ -181,14 +180,14 @@ public class SearchContextImpl implements SearchContext {
         if (parserProperties == null) {
             props = new LinkedHashMap<String, String>(4);
             props.put(SearchUtils.DATE_FORMAT_PROPERTY, 
-                      (String)message.getContextualProperty(SearchUtils.DATE_FORMAT_PROPERTY));
+                      (String)context.getProperties().get(SearchUtils.DATE_FORMAT_PROPERTY));
             props.put(SearchUtils.TIMEZONE_SUPPORT_PROPERTY, 
-                      (String)message.getContextualProperty(SearchUtils.TIMEZONE_SUPPORT_PROPERTY));
+                      (String)context.getProperties().get(SearchUtils.TIMEZONE_SUPPORT_PROPERTY));
             props.put(SearchUtils.LAX_PROPERTY_MATCH, 
-                      (String)message.getContextualProperty(SearchUtils.LAX_PROPERTY_MATCH));
+                      (String)context.getProperties().get(SearchUtils.LAX_PROPERTY_MATCH));
             // FIQL specific
             props.put(FiqlParser.SUPPORT_SINGLE_EQUALS, 
-                      (String)message.getContextualProperty(FiqlParser.SUPPORT_SINGLE_EQUALS)); 
+                      (String)context.getProperties().get(FiqlParser.SUPPORT_SINGLE_EQUALS));
         } else {
             props = parserProperties;
         }
@@ -196,7 +195,7 @@ public class SearchContextImpl implements SearchContext {
         Map<String, String> beanProps = null;
             
         if (beanProperties == null) {    
-            beanProps = CastUtils.cast((Map<?, ?>)message.getContextualProperty(SearchUtils.BEAN_PROPERTY_MAP));
+            beanProps = CastUtils.cast((Map<?, ?>) context.getProperties().get(SearchUtils.BEAN_PROPERTY_MAP));
         } else {
             beanProps = beanProperties;
         }

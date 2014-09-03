@@ -18,21 +18,21 @@
  */
 package org.apache.cxf.jaxrs.ext.search;
 
-import org.apache.cxf.message.Message;
-import org.apache.cxf.message.MessageImpl;
+import com.sun.jersey.api.core.HttpContext;
 
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.easymock.EasyMock.createStrictMock;
 
 public class SearchContextImplCustomParserTest extends Assert {
 
     @Test
     public void testQuery() {
-        Message m = new MessageImpl();
-        m.put(SearchContextImpl.CUSTOM_SEARCH_QUERY_PARAM_NAME, "$customfilter");
-        m.put(SearchContextImpl.CUSTOM_SEARCH_PARSER_PROPERTY, new CustomParser());
-        m.put(Message.QUERY_STRING, "$customfilter=color is red");
-        SearchCondition<Color> sc = new SearchContextImpl(m).getCondition(Color.class);
+        HttpContext httpContext = SearchContextImplTest.createHttpContext("$customfilter=color is red");
+        httpContext.getProperties().put(SearchContextImpl.CUSTOM_SEARCH_QUERY_PARAM_NAME, "$customfilter");
+        httpContext.getProperties().put(SearchContextImpl.CUSTOM_SEARCH_PARSER_PROPERTY, new CustomParser());
+        SearchCondition<Color> sc = new SearchContextImpl(httpContext).getCondition(Color.class);
         
         assertTrue(sc.isMet(new Color("red")));
         assertFalse(sc.isMet(new Color("blue")));

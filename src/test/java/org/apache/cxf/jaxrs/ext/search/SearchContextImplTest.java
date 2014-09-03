@@ -18,76 +18,103 @@
  */
 package org.apache.cxf.jaxrs.ext.search;
 
+import com.sun.jersey.api.core.ExtendedUriInfo;
+import com.sun.jersey.api.core.HttpContext;
+import com.sun.jersey.api.core.HttpRequestContext;
+import com.sun.jersey.api.core.HttpResponseContext;
+import com.sun.jersey.api.model.AbstractResourceMethod;
+import com.sun.jersey.api.uri.UriComponent;
+import com.sun.jersey.api.uri.UriTemplate;
+
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.MatchResult;
 
 import org.apache.cxf.jaxrs.ext.search.fiql.FiqlParser;
-import org.apache.cxf.message.Message;
-import org.apache.cxf.message.MessageImpl;
 
 import org.junit.Assert;
 import org.junit.Test;
 
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.PathSegment;
+import javax.ws.rs.core.UriBuilder;
+
+import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.createStrictMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
+
 public class SearchContextImplTest extends Assert {
+
+    static HttpContext createHttpContext(String query) {
+        URI uri = URI.create("http://dummy/pppp?" + UriComponent.encode(query, UriComponent.Type.QUERY));
+        MultivaluedMap<String, String> stringStringMultivaluedMap = UriComponent.decodeQuery(uri, true);
+        ExtendedUriInfo extendedUriInfo = createMock(ExtendedUriInfo.class);
+        expect(extendedUriInfo.getQueryParameters(true)).andReturn(stringStringMultivaluedMap).anyTimes();
+        expect(extendedUriInfo.getRequestUri()).andReturn(uri).anyTimes();
+        replay(extendedUriInfo);
+
+        HttpContext strictMock = createMock(HttpContext.class);
+        expect(strictMock.getProperties()).andReturn(new HashMap<String, Object>()).anyTimes();
+        expect(strictMock.getUriInfo()).andReturn(extendedUriInfo).anyTimes();
+        replay(strictMock);
+        return strictMock;
+    }
 
     @Test
     public void testPlainQuery1() {
-        Message m = new MessageImpl();
-        m.put("search.use.plain.queries", true);
-        m.put(Message.QUERY_STRING, "a=b");
-        String exp = new SearchContextImpl(m).getSearchExpression();
+        HttpContext httpContext = createHttpContext("a=b");
+        httpContext.getProperties().put("search.use.plain.queries", true);
+        String exp = new SearchContextImpl(httpContext).getSearchExpression();
         assertEquals("a==b", exp);
     }
     
     @Test
     public void testWrongQueryNoException() {
-        Message m = new MessageImpl();
-        m.put("search.block.search.exception", true);
-        m.put(Message.QUERY_STRING, "_s=ab");
-        assertNull(new SearchContextImpl(m).getCondition(Book.class));
+        HttpContext httpContext = createHttpContext("_s=ab");
+        httpContext.getProperties().put("search.block.search.exception", true);
+        assertNull(new SearchContextImpl(httpContext).getCondition(Book.class));
     }
     
     @Test(expected = SearchParseException.class)
     public void testWrongQueryException() {
-        Message m = new MessageImpl();
-        m.put(Message.QUERY_STRING, "_s=ab");
-        new SearchContextImpl(m).getCondition(Book.class);
+        HttpContext httpContext = createHttpContext("_s=ab");
+        new SearchContextImpl(httpContext).getCondition(Book.class);
     }
     
     @Test
     public void testPlainQuery2() {
-        Message m = new MessageImpl();
-        m.put("search.use.plain.queries", true);
-        m.put(Message.QUERY_STRING, "a=b&a=b1");
-        String exp = new SearchContextImpl(m).getSearchExpression();
+        HttpContext httpContext = createHttpContext("a=b&a=b1");
+        httpContext.getProperties().put("search.use.plain.queries", true);
+        String exp = new SearchContextImpl(httpContext).getSearchExpression();
         assertEquals("(a==b,a==b1)", exp);
     }
     
     @Test
     public void testPlainQuery3() {
-        Message m = new MessageImpl();
-        m.put("search.use.plain.queries", true);
-        m.put(Message.QUERY_STRING, "a=b&c=d");
-        String exp = new SearchContextImpl(m).getSearchExpression();
+        HttpContext httpContext = createHttpContext("a=b&c=d");
+        httpContext.getProperties().put("search.use.plain.queries", true);
+        String exp = new SearchContextImpl(httpContext).getSearchExpression();
         assertEquals("(a==b;c==d)", exp);
     }
     
     @Test
     public void testPlainQuery4() {
-        Message m = new MessageImpl();
-        m.put("search.use.plain.queries", true);
-        m.put(Message.QUERY_STRING, "a=b&a=b2&c=d&f=g");
-        String exp = new SearchContextImpl(m).getSearchExpression();
+        HttpContext httpContext = createHttpContext("a=b&a=b2&c=d&f=g");
+        httpContext.getProperties().put("search.use.plain.queries", true);
+        String exp = new SearchContextImpl(httpContext).getSearchExpression();
         assertEquals("((a==b,a==b2);c==d;f==g)", exp);
     }
     
     @Test
     public void testPlainQuery5() {
-        Message m = new MessageImpl();
-        m.put("search.use.plain.queries", true);
-        m.put(Message.QUERY_STRING, "aFrom=1&aTill=3");
-        String exp = new SearchContextImpl(m).getSearchExpression();
+        HttpContext httpContext = createHttpContext("aFrom=1&aTill=3");
+        httpContext.getProperties().put("search.use.plain.queries", true);
+        String exp = new SearchContextImpl(httpContext).getSearchExpression();
         assertEquals("(a=ge=1;a=le=3)", exp);
     }
     
@@ -101,10 +128,9 @@ public class SearchContextImplTest extends Assert {
     
     @Test
     public void testFiqlSearchConditionCustomQueryName() {
-        Message m = new MessageImpl();
-        m.put(SearchContextImpl.CUSTOM_SEARCH_QUERY_PARAM_NAME, "thequery");
-        doTestFiqlSearchCondition(m,
-            "thequery" + "=" + "name==CXF%20Rocks;id=gt=123");
+        HttpContext httpContext = createHttpContext("thequery" + "=" + "name==CXF%20Rocks;id=gt=123");
+        httpContext.getProperties().put(SearchContextImpl.CUSTOM_SEARCH_QUERY_PARAM_NAME, "thequery");
+        doTestFiqlSearchCondition(httpContext);
     }
     
     @Test
@@ -115,7 +141,7 @@ public class SearchContextImplTest extends Assert {
     
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalConditionType() {
-        SearchContext context = new SearchContextImpl(new MessageImpl());
+        SearchContext context = new SearchContextImpl(createHttpContext(""));
         context.getCondition(String.class);
     }
     @Test
@@ -135,11 +161,10 @@ public class SearchContextImplTest extends Assert {
     }
     
     private void doTestFiqlSearchCondition(String queryString) {
-        doTestFiqlSearchCondition(new MessageImpl(), queryString);
+        doTestFiqlSearchCondition(createHttpContext(queryString));
     }
     
-    private void doTestFiqlSearchCondition(Message m, String queryString) {
-        m.put(Message.QUERY_STRING, queryString);
+    private void doTestFiqlSearchCondition(HttpContext m) {
         SearchContext context = new SearchContextImpl(m);
         SearchCondition<Book> sc = context.getCondition(Book.class);
         assertNotNull(sc);
@@ -154,9 +179,8 @@ public class SearchContextImplTest extends Assert {
     }
     
     private void doTestFiqlSearchBean(String queryString) {
-        Message m = new MessageImpl();
-        m.put(Message.QUERY_STRING, queryString);
-        SearchContext context = new SearchContextImpl(m);
+        HttpContext httpContext = createHttpContext(queryString);
+        SearchContext context = new SearchContextImpl(httpContext);
         SearchCondition<SearchBean> sc = context.getCondition(SearchBean.class);
         assertNotNull(sc);
         
@@ -191,9 +215,8 @@ public class SearchContextImplTest extends Assert {
     
     @Test
     public void testPrimitiveStatementSearchBean() {
-        Message m = new MessageImpl();
-        m.put(Message.QUERY_STRING, "_s=name==CXF");
-        SearchContext context = new SearchContextImpl(m);
+        HttpContext httpContext = createHttpContext("_s=name==CXF");
+        SearchContext context = new SearchContextImpl(httpContext);
         SearchCondition<SearchBean> sc = context.getCondition(SearchBean.class);
         assertNotNull(sc);
         
@@ -208,9 +231,8 @@ public class SearchContextImplTest extends Assert {
     
     @Test
     public void testPrimitiveStatementSearchBeanComlexName() {
-        Message m = new MessageImpl();
-        m.put(Message.QUERY_STRING, "_s=complex.name==CXF");
-        SearchContext context = new SearchContextImpl(m);
+        HttpContext httpContext = createHttpContext("_s=complex.name==CXF");
+        SearchContext context = new SearchContextImpl(httpContext);
         SearchCondition<SearchBean> sc = context.getCondition(SearchBean.class);
         assertNotNull(sc);
         
@@ -225,10 +247,9 @@ public class SearchContextImplTest extends Assert {
     
     @Test
     public void testSingleEquals() {
-        Message m = new MessageImpl();
-        m.put(Message.QUERY_STRING, "_s=name=CXF");
-        m.put("fiql.support.single.equals.operator", "true");
-        SearchContext context = new SearchContextImpl(m);
+        HttpContext httpContext = createHttpContext("_s=name=CXF");
+        httpContext.getProperties().put("fiql.support.single.equals.operator", "true");
+        SearchContext context = new SearchContextImpl(httpContext);
         SearchCondition<SearchBean> sc = context.getCondition(SearchBean.class);
         assertNotNull(sc);
         

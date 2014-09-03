@@ -19,38 +19,43 @@
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>cxf-rt-rs-extension-search</artifactId>
-    <packaging>bundle</packaging>
-    <name>Apache CXF JAX-RS Extensions: Search</name>
-    <description>Apache CXF JAX-RS Extensions: Search</description>
+    <groupId>com.sun.jersey</groupId>
+    <artifactId>rs-extension-search</artifactId>
+    <version>3.0.0-SNAPSHOT</version>
+    <name>Jersey JAX-RS Extensions: Search</name>
+    <description>Jersey JAX-RS Extensions: Search</description>
     <url>http://cxf.apache.org</url>
-    <parent>
-        <groupId>org.apache.cxf</groupId>
-        <artifactId>cxf-parent</artifactId>
-        <version>3.0.0-SNAPSHOT</version>
-        <relativePath>../../../../parent/pom.xml</relativePath>
-    </parent>
     <properties>
         <hibernate.em.version>4.1.0.Final</hibernate.em.version>
         <hsqldb.version>1.8.0.10</hsqldb.version>
+        <jersey-version>1.18.1</jersey-version>
         <cxf.lucene.version>4.0.0-BETA</cxf.lucene.version>
+        <cxf.junit.version>4.11</cxf.junit.version>
+        <cxf.geronimo.jpa.version>1.0</cxf.geronimo.jpa.version>
+        <cxf.olingo.version>1.1.0</cxf.olingo.version>
+        <cxf.easymock.version>3.1</cxf.easymock.version>
     </properties>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+            <version>${cxf.junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.cxf</groupId>
-            <artifactId>cxf-rt-frontend-jaxrs</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-               <exclusion>
-                    <groupId>javax.validation</groupId>
-                    <artifactId>validation-api</artifactId>
-               </exclusion>
-            </exclusions>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-core</artifactId>
+            <version>${jersey-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-server</artifactId>
+            <version>${jersey-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
         </dependency>
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
@@ -67,10 +72,11 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-		    <groupId>org.apache.olingo</groupId>
-		    <artifactId>olingo-odata2-core-incubating</artifactId>
-		    <optional>true</optional>
-		</dependency>
+            <groupId>org.apache.olingo</groupId>
+            <artifactId>olingo-odata2-core-incubating</artifactId>
+            <version>${cxf.olingo.version}</version>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
@@ -86,6 +92,7 @@
         <dependency>
             <groupId>org.easymock</groupId>
             <artifactId>easymock</artifactId>
+            <version>${cxf.easymock.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

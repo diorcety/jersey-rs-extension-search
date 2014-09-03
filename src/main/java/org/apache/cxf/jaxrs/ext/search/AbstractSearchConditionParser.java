@@ -33,8 +33,8 @@ import javax.xml.datatype.DatatypeFactory;
 import org.apache.cxf.jaxrs.ext.search.Beanspector.TypeInfo;
 import org.apache.cxf.jaxrs.ext.search.collections.CollectionCheck;
 import org.apache.cxf.jaxrs.ext.search.collections.CollectionCheckInfo;
-import org.apache.cxf.jaxrs.utils.InjectionUtils;
-import org.apache.cxf.message.MessageUtils;
+import org.apache.cxf.jaxrs.ext.search.utils.InjectionUtils;
+import org.apache.cxf.jaxrs.ext.search.utils.PropertyUtils;
 
 public abstract class AbstractSearchConditionParser<T> implements SearchConditionParser<T> {
     
@@ -76,7 +76,7 @@ public abstract class AbstractSearchConditionParser<T> implements SearchConditio
         } catch (Exception e) {
             // continue
         }
-        if (typeInfo == null && !MessageUtils.isTrue(contextProperties.get(SearchUtils.LAX_PROPERTY_MATCH))) {
+        if (typeInfo == null && !PropertyUtils.isTrue(contextProperties.get(SearchUtils.LAX_PROPERTY_MATCH))) {
             throw new PropertyNotFoundException(name, value);
         }
         return typeInfo;

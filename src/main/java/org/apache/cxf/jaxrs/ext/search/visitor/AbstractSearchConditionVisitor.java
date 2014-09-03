@@ -29,7 +29,7 @@ import org.apache.cxf.jaxrs.ext.search.PrimitiveStatement;
 import org.apache.cxf.jaxrs.ext.search.SearchConditionVisitor;
 import org.apache.cxf.jaxrs.ext.search.collections.CollectionCheckInfo;
 import org.apache.cxf.jaxrs.ext.search.collections.CollectionCheckStatement;
-import org.apache.cxf.jaxrs.utils.InjectionUtils;
+import org.apache.cxf.jaxrs.ext.search.utils.InjectionUtils;
 
 
 public abstract class AbstractSearchConditionVisitor <T, E> implements SearchConditionVisitor<T, E> {

@@ -34,7 +34,7 @@ import org.apache.cxf.jaxrs.ext.search.SearchBean;
 import org.apache.cxf.jaxrs.ext.search.SearchCondition;
 import org.apache.cxf.jaxrs.ext.search.SearchParseException;
 import org.apache.cxf.jaxrs.ext.search.SimpleSearchCondition;
-import org.apache.cxf.message.MessageUtils;
+import org.apache.cxf.jaxrs.ext.search.utils.PropertyUtils;
 
 
 /**
@@ -131,7 +131,7 @@ public class FiqlParser<T> extends AbstractSearchConditionParser<T> {
                       Map<String, String> beanProperties) {
         super(tclass, contextProperties, beanProperties);
         
-        if (MessageUtils.isTrue(this.contextProperties.get(SUPPORT_SINGLE_EQUALS))) {
+        if (PropertyUtils.isTrue((this.contextProperties.get(SUPPORT_SINGLE_EQUALS)))) {
             operatorsMap = new HashMap<String, ConditionType>(operatorsMap);
             operatorsMap.put("=", ConditionType.EQUALS);
             comparatorsPattern = COMPARATORS_PATTERN_SINGLE_EQUALS;

@@ -18,13 +18,13 @@
  */
 package org.apache.cxf.jaxrs.ext.search;
 
+import org.apache.cxf.jaxrs.ext.search.utils.InjectionUtils;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-
-import org.apache.cxf.jaxrs.utils.InjectionUtils;
 
 public class PrimitiveSearchCondition<T> implements SearchCondition<T> {
     
