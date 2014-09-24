@@ -16,30 +16,60 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.cxf.jaxrs.ext.search.jpa;
+package org.apache.cxf.jaxrs.ext.search.persistence;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import javax.persistence.OneToOne;
 
 @Entity
-public class Library {
-    @Id
+public class BookReview {
     private int id;
-    private String address;
+    private Review review;
+    private List<String> authors = new LinkedList<String>();
+    private Book book;
     
+    public Review getReview() {
+        return review;
+    }
+
+    public void setReview(Review review) {
+        this.review = review;
+    }
+
+    @OneToOne
+    public Book getBook() {
+        return book;
+    }
+
+    public void setBook(Book book) {
+        this.book = book;
+    }
+
+    @Id
     public int getId() {
         return id;
     }
-    
+
     public void setId(int id) {
         this.id = id;
     }
-
-    public String getAddress() {
-        return address;
+    
+    @ElementCollection
+    public List<String> getAuthors() {
+        return authors;
     }
 
-    public void setAddress(String address) {
-        this.address = address;
+    public void setAuthors(List<String> authors) {
+        this.authors = authors;
+    }
+
+    public static enum Review {
+        GOOD,
+        BAD
     }
 }

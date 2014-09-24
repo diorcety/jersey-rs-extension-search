@@ -28,6 +28,7 @@ import javax.persistence.Tuple;
 
 import org.apache.cxf.jaxrs.ext.search.SearchConditionParser;
 import org.apache.cxf.jaxrs.ext.search.fiql.FiqlParser;
+import org.apache.cxf.jaxrs.ext.search.persistence.Book;
 import org.junit.Test;
 
 public class JPATypedQueryVisitorFiqlTest extends AbstractJPATypedQueryVisitorTest {

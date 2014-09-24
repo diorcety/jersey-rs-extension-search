@@ -86,6 +86,13 @@
             <optional>true</optional>
         </dependency>
         <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>${hibernate.em.version}</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>org.apache.olingo</groupId>
             <artifactId>olingo-odata2-core-incubating</artifactId>
             <version>${cxf.olingo.version}</version>

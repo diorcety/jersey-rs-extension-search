@@ -16,23 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.cxf.jaxrs.ext.search.jpa;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.Tuple;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.metamodel.SingularAttribute;
+package org.apache.cxf.jaxrs.ext.search.hibernate;
 
 import org.apache.cxf.jaxrs.ext.search.SearchCondition;
 import org.apache.cxf.jaxrs.ext.search.SearchConditionParser;
@@ -40,23 +24,36 @@ import org.apache.cxf.jaxrs.ext.search.SearchConditionVisitor;
 import org.apache.cxf.jaxrs.ext.search.SearchUtils;
 import org.apache.cxf.jaxrs.ext.search.persistence.Book;
 import org.apache.cxf.jaxrs.ext.search.persistence.BookReview;
-import org.apache.cxf.jaxrs.ext.search.persistence.BookReview.Review;
-import org.apache.cxf.jaxrs.ext.search.persistence.Book_;
 import org.apache.cxf.jaxrs.ext.search.persistence.Library;
 import org.apache.cxf.jaxrs.ext.search.persistence.Name;
 import org.apache.cxf.jaxrs.ext.search.persistence.OwnerAddress;
 import org.apache.cxf.jaxrs.ext.search.persistence.OwnerInfo;
+import org.hibernate.Criteria;
+import org.hibernate.Session;
+import org.hibernate.criterion.Projections;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 
-public abstract class AbstractJPATypedQueryVisitorTest extends Assert {
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.Persistence;
+
+public abstract class AbstractHibernateVisitorTest extends Assert {
 
     private EntityManagerFactory emFactory;
 
     private EntityManager em;
 
     private Connection connection;
+    private Session session;
 
     protected abstract SearchConditionParser<Book> getParser();
     protected abstract SearchConditionParser<Book> getParser(Map<String, String> visitorProps,
@@ -74,6 +71,7 @@ public abstract class AbstractJPATypedQueryVisitorTest extends Assert {
         try {
             emFactory = Persistence.createEntityManagerFactory("testUnitHibernate");
             em = emFactory.createEntityManager();
+            session = (Session) (em.getDelegate());
          
             em.getTransaction().begin();
             
@@ -85,16 +83,16 @@ public abstract class AbstractJPATypedQueryVisitorTest extends Assert {
             
             BookReview br1 = new BookReview();
             br1.setId(1);
-            br1.setReview(Review.BAD);
+            br1.setReview(BookReview.Review.BAD);
             br1.getAuthors().add("Ted");
             em.persist(br1);
-            
+
             Book b1 = new Book();
-            
+
             br1.setBook(b1);
             b1.getReviews().add(br1);
-            
-            
+
+
             b1.setId(9);
             b1.setBookTitle("num9");
             b1.setAddress(new OwnerAddress("Street1"));
@@ -106,17 +104,17 @@ public abstract class AbstractJPATypedQueryVisitorTest extends Assert {
             b1.getAuthors().add("John");
             em.persist(b1);
             assertTrue(em.contains(b1));
-            
+
             BookReview br2 = new BookReview();
             br2.setId(2);
-            br2.setReview(Review.GOOD);
+            br2.setReview(BookReview.Review.GOOD);
             br2.getAuthors().add("Ted");
             em.persist(br2);
-            
+
             Book b2 = new Book();
             b2.getReviews().add(br2);
             br2.setBook(b2);
-            
+
             b2.setId(10);
             b2.setBookTitle("num10");
             b2.setAddress(new OwnerAddress("Street2"));
@@ -128,13 +126,13 @@ public abstract class AbstractJPATypedQueryVisitorTest extends Assert {
             b2.getAuthors().add("John");
             em.persist(b2);
             assertTrue(em.contains(b2));
-            
+
             BookReview br3 = new BookReview();
             br3.setId(3);
-            br3.setReview(Review.GOOD);
+            br3.setReview(BookReview.Review.GOOD);
             br3.getAuthors().add("Ted");
             em.persist(br3);
-            
+
             Book b3 = new Book();
             b3.getReviews().add(br3);
             br3.setBook(b3);
@@ -200,81 +198,23 @@ public abstract class AbstractJPATypedQueryVisitorTest extends Assert {
                                   List<String> joinProps) throws Exception {
         SearchCondition<Book> filter = getParser(visitorProps, parserBinProps)
             .parse(expression);
-        SearchConditionVisitor<Book, TypedQuery<Book>> jpa = 
-            new JPATypedQueryVisitor<Book>(em, Book.class, visitorProps, joinProps);
+        SearchConditionVisitor<Book, Criteria> jpa =
+            new HibernateCriteriaVisitor<Book>(session, Book.class, visitorProps, joinProps);
         filter.accept(jpa);
-        TypedQuery<Book> query = jpa.getQuery();
-        return query.getResultList();
-    }
-    
-    protected List<Tuple> criteriaQueryBooksTuple(String expression) throws Exception {
-        SearchCondition<Book> filter = getParser().parse(expression);
-        JPACriteriaQueryVisitor<Book, Tuple> jpa = 
-            new JPACriteriaQueryVisitor<Book, Tuple>(em, Book.class, Tuple.class);
-        filter.accept(jpa);
-        
-        List<SingularAttribute<Book, ?>> selections = 
-            new ArrayList<SingularAttribute<Book, ?>>();
-        selections.add(Book_.id);
-        
-        jpa.selectTuple(selections);
-        
-        CriteriaQuery<Tuple> cquery = jpa.getQuery();
-        return em.createQuery(cquery).getResultList();
+        Criteria query = jpa.getQuery();
+        return query.list();
     }
     
     protected long criteriaQueryBooksCount(String expression) throws Exception {
         SearchCondition<Book> filter = getParser().parse(expression);
-        JPACriteriaQueryVisitor<Book, Long> jpa = 
-            new JPACriteriaQueryVisitor<Book, Long>(em, Book.class, Long.class);
+        SearchConditionVisitor<Book, Criteria> jpa =
+            new HibernateCriteriaVisitor<Book>(session, Book.class);
         filter.accept(jpa);
-        return jpa.count();
+        Criteria query = jpa.getQuery();
+        query.setProjection(Projections.rowCount());
+        return (Long) query.uniqueResult();
     }
-    
-    protected List<Book> criteriaQueryBooksOrderBy(String expression, boolean asc) throws Exception {
-        SearchCondition<Book> filter = getParser().parse(expression);
-        JPACriteriaQueryVisitor<Book, Book> jpa = 
-            new JPACriteriaQueryVisitor<Book, Book>(em, Book.class, Book.class);
-        filter.accept(jpa);
-        
-        List<SingularAttribute<Book, ?>> selections = 
-            new ArrayList<SingularAttribute<Book, ?>>();
-        selections.add(Book_.id);
-        
-        return jpa.getOrderedTypedQuery(selections, asc).getResultList();
-    }
-    
-    protected List<BookInfo> criteriaQueryBooksConstruct(String expression) throws Exception {
-        SearchCondition<Book> filter = getParser().parse(expression);
-        JPACriteriaQueryVisitor<Book, BookInfo> jpa = 
-            new JPACriteriaQueryVisitor<Book, BookInfo>(em, Book.class, BookInfo.class);
-        filter.accept(jpa);
-        
-        List<SingularAttribute<Book, ?>> selections = 
-            new ArrayList<SingularAttribute<Book, ?>>();
-        selections.add(Book_.id);
-        selections.add(Book_.bookTitle);
-        
-        jpa.selectConstruct(selections);
-        
-        CriteriaQuery<BookInfo> cquery = jpa.getQuery();
-        return em.createQuery(cquery).getResultList();
-    }
-    
-    protected List<Object[]> criteriaQueryBooksArray(String expression) throws Exception {
-        SearchCondition<Book> filter = getParser().parse(expression);
-        JPACriteriaQueryVisitor<Book, Object[]> jpa = 
-            new JPACriteriaQueryVisitor<Book, Object[]>(em, Book.class, Object[].class);
-        filter.accept(jpa);
-        
-        List<SingularAttribute<Book, ?>> selections = 
-            new ArrayList<SingularAttribute<Book, ?>>();
-        selections.add(Book_.id);
-        selections.add(Book_.bookTitle);
-        
-        return jpa.getArrayTypedQuery(selections).getResultList();
-    }    
-    
+
     protected Date parseDate(String value) throws Exception {
         return new SimpleDateFormat(SearchUtils.DEFAULT_DATE_FORMAT).parse(value);
     }

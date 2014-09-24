@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.cxf.jaxrs.ext.search.jpa;
+package org.apache.cxf.jaxrs.ext.search.persistence;
 
 import java.util.Date;
 

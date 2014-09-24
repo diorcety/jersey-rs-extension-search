@@ -16,24 +16,38 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.cxf.jaxrs.ext.search.jpa;
+package org.apache.cxf.jaxrs.ext.search.persistence;
 
-import org.apache.cxf.jaxrs.ext.search.SearchCondition;
-import org.apache.cxf.jaxrs.ext.search.fiql.FiqlParser;
+import javax.persistence.Embeddable;
 
-import org.apache.cxf.jaxrs.ext.search.persistence.Book;
-import org.junit.Assert;
-import org.junit.Test;
+@Embeddable
+public class OwnerAddress {
 
-public class JPALanguageVisitorTest extends Assert {
+    private String street;
+    private int houseNumber;
 
-    @Test
-    public void testSimpleQuery() throws Exception {
+
+    public OwnerAddress() {
         
-        SearchCondition<Book> filter = new FiqlParser<Book>(Book.class).parse("id=lt=10");
-        JPALanguageVisitor<Book> jpa = new JPALanguageVisitor<Book>(Book.class);
-        filter.accept(jpa);
-        assertEquals("SELECT t FROM Book t WHERE t.id < '10'", jpa.getQuery());
-        
+    }
+    
+    public OwnerAddress(String street) {
+        this.street = street;
+    }
+    
+    public String getStreet() {
+        return street;
+    }
+
+    public void setStreet(String street) {
+        this.street = street;
+    }
+
+    public int getHouseNumber() {
+        return houseNumber;
+    }
+
+    public void setHouseNumber(int houseNumber) {
+        this.houseNumber = houseNumber;
     }
 }

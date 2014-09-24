@@ -16,23 +16,30 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.cxf.jaxrs.ext.search.jpa;
+package org.apache.cxf.jaxrs.ext.search.persistence;
 
-import javax.persistence.metamodel.ListAttribute;
-import javax.persistence.metamodel.SingularAttribute;
+import javax.persistence.Column;
+import javax.persistence.Embeddable;
 
-@javax.persistence.metamodel.StaticMetamodel(Book.class)
-//CHECKSTYLE:OFF
-public final class Book_ {
-    private Book_() {
+@Embeddable
+public class Name {
+
+    private String name;
+    
+    public Name() {
         
     }
-    public static volatile SingularAttribute<Book, Integer> id;
-    public static volatile SingularAttribute<Book, String> bookTitle;
-    public static volatile SingularAttribute<Book, Library> library;
-    public static volatile SingularAttribute<Book, OwnerInfo> ownerInfo;
-    public static volatile SingularAttribute<Book, OwnerAddress> address;
-    public static volatile ListAttribute<Book, BookReview> reviews;
-    public static volatile ListAttribute<Book, String> authors;
+    public Name(String name) {
+        this.name = name;
+    }
+    
+    @Column(name = "thename")
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    
 }
-//CHECKSTYLE:ON

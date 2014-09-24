@@ -196,5 +196,17 @@ public final class StringUtils {
             .append(Character.toLowerCase(str.charAt(0)))
             .append(str.substring(1))
             .toString();
-    }    
+    }
+
+    public static String join(CharSequence delimiter, CharSequence... elements) {
+        StringBuilder sb = new StringBuilder();
+
+        for(int i = 0; i < elements.length; ++i) {
+            sb.append(elements[i]);
+            if(i != elements.length -1) {
+                sb.append(delimiter);
+            }
+        }
+        return sb.toString();
+    }
 }
